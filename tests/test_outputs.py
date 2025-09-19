@@ -1,55 +1,72 @@
 import os
 import subprocess
-import tempfile
 from pathlib import Path
 
-def create_file(path: Path, size_bytes: int):
-    path.parent.mkdir(parents=True, exist_ok=True)
+SCRIPT = Path(__file__).resolve().parents[1] / "solution.sh"
+
+def run(cmd):
+    return subprocess.check_output(cmd, shell=True, text=True).strip()
+
+def test_multiple_files(tmp_path):
+    d = tmp_path
+    (d / "file1").write_text("A")
+    (d / "file2").write_text("BB")
+    (d / "file3").write_text("CCC")
+    (d / "file4").write_text("DDDD")
+    out = run(f"/bin/bash {SCRIPT} {d}")
+    assert out.splitlines() == [
+        f"4 {d}/file4",
+        f"3 {d}/file3",
+        f"2 {d}/file2",
+    ]
+
+def test_fewer_than_three(tmp_path):
+    d = tmp_path
+    (d / "file1").write_text("Hello")
+    (d / "file2").write_text("World!")
+    out = run(f"/bin/bash {SCRIPT} {d}")
+    assert out.splitlines() == [
+        f"6 {d}/file2",
+        f"5 {d}/file1",
+    ]
+
+def test_empty_dir(tmp_path):
+    out = run(f"/bin/bash {SCRIPT} {tmp_path}")
+    assert out == ""
+
+def test_current_dir(tmp_path):
+    (tmp_path / "file1").write_text("X")
+    (tmp_path / "file2").write_text("YY")
+    cwd = os.getcwd()
     try:
-        subprocess.check_call(["dd", "if=/dev/zero", f"of={str(path)}", "bs=1", f"count={size_bytes}"],
-                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except Exception:
-        with open(path, "wb") as f:
-            f.write(b"\0" * size_bytes)
+        os.chdir(tmp_path)
+        out = run(f"/bin/bash {SCRIPT}")
+    finally:
+        os.chdir(cwd)
+    assert out.splitlines() == [
+        f"2 {tmp_path}/file2",
+        f"1 {tmp_path}/file1",
+    ]
 
-def run_solution_and_get_lines(test_dir: Path, target_dir: Path):
-    sol_path = Path("/app/solution.sh")
-    out = subprocess.check_output(["/bin/bash", str(sol_path), str(target_dir)]).decode().strip()
-    if out == "":
-        return []
-    return out.splitlines()
+def test_nested(tmp_path):
+    sub = tmp_path / "sub"
+    sub.mkdir()
+    (tmp_path / "file1").write_text("12345")
+    (sub / "file2").write_text("6789")
+    (sub / "file3").write_text("0")
+    out = run(f"/bin/bash {SCRIPT} {tmp_path}")
+    assert out.splitlines() == [
+        f"5 {tmp_path}/file1",
+        f"4 {sub}/file2",
+        f"1 {sub}/file3",
+    ]
 
-def test_top_3_largest_files(tmp_path: Path):
-    td = tmp_path / "sample"
-    f1 = td / "a" / "file_small.txt"
-    f2 = td / "b" / "file_medium.txt"
-    f3 = td / "c" / "file_large.txt"
-    f4 = td / "c" / "file_extra.txt"
-
-    create_file(f1, 10)
-    create_file(f2, 50)
-    create_file(f3, 200)
-    create_file(f4, 5)
-
-    lines = run_solution_and_get_lines(Path(os.environ["TEST_DIR"]), td)
-
-    assert len(lines) >= 3
-    parts = [line.split(" ", 1) for line in lines[:3]]
-    sizes = [int(p[0]) for p in parts]
-    paths = [p[1] for p in parts]
-    assert sizes == [200, 50, 10]
-    for p in paths:
-        assert os.path.isabs(p)
-        assert os.path.exists(p)
-
-def test_fewer_than_three_files(tmp_path):
-    td = tmp_path / "smallset"
-    f1 = td / "single.txt"
-    create_file(f1, 123)
-    out = subprocess.check_output(["/bin/bash", "/app/solution.sh", str(td)]).decode().strip()
-    lines = out.splitlines() if out else []
-    assert len(lines) == 1
-    size_str, path_str = lines[0].split(" ", 1)
-    assert int(size_str) == 123
-    assert os.path.isabs(path_str)
-    assert os.path.exists(path_str)
+def test_symlinks_and_special(tmp_path):
+    f1 = tmp_path / "file1"
+    f1.write_text("Data")
+    symlink = tmp_path / "symlink"
+    symlink.symlink_to(f1)
+    # device node might need root, so please ignore failure
+    subprocess.run(f"mknod {tmp_path}/device c 1 3", shell=True, check=False)
+    out = run(f"/bin/bash {SCRIPT} {tmp_path}")
+    assert out == f"4 {f1}"
