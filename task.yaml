@@ -1,0 +1,20 @@
+instruction: |
+  Base:
+    Your goal is to write a shell command that, given a directory path, prints the top 3 largest regular files in that directory tree.
+    Output format (one per line): "<size-in-bytes> <absolute-path>"
+    - Only regular files should be counted (no directories, no symlinks).
+    - Sort descending by size. If fewer than 3 files exist, print all available.
+    - If directory not provided, default to current working directory.
+  Example:
+    If /tmp/testdir contains three files of sizes 100, 50, and 10 bytes, running:
+      /bin/bash solution.sh /tmp/testdir
+    Should print:
+      100 /tmp/testdir/file1
+      50 /tmp/testdir/file2
+      10 /tmp/testdir/file3
+
+author_email: your@email.com
+difficulty: hard
+tags: [bash, linux, sysadmin, files]
+max_agent_timeout_sec: 180
+max_test_timeout_sec: 30
