@@ -66,7 +66,8 @@ def test_symlinks_and_special(tmp_path):
     f1.write_text("Data")
     symlink = tmp_path / "symlink"
     symlink.symlink_to(f1)
-    # device node might need root, so please ignore failure
     subprocess.run(f"mknod {tmp_path}/device c 1 3", shell=True, check=False)
     out = run(f"/bin/bash {SCRIPT} {tmp_path}")
     assert out == f"4 {f1}"
+    assert "symlink" not in out
+    assert "device" not in out
