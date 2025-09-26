@@ -1,19 +1,23 @@
 instruction: |
   Background:
-    This task tests your ability to combine standard Linux utilities to analyse
+    This task tests your ability to combine standard Linux utilities to analyze
     file metadata. It mirrors a common sysadmin need: locating the largest
     files in a directory tree to free up disk space.
+
   Goal:
-    Write a Bash script that, given a directory path, prints the top 3 largest
-    regular files inside that tree.
+    Write a Bash script named `solution.sh` that, given a directory path,
+    prints the top 3 largest regular files inside that tree.
+
   Requirements:
     - Output format (one per line): "<size-in-bytes> <absolute-path>"
-    - Only regular files count (ignore directories, symlinks, devices, etc.).
-    - Sort results by size in descending order.
-    - If fewer than 3 files exist, print all available.
-    - If no directory is provided, default to the current working directory.
+    - Only regular files count (ignore directories, symlinks, devices, etc.)
+    - Sort results by size in descending order
+    - If fewer than 3 files exist, print all available
+    - If no directory is provided, default to the current working directory
+    - The harness will look for `solution.sh` as the executable file
+
   Example:
-    If `/tmp/testdir` contains three files sized 100, 50 and 10 bytes, running:
+    If `/tmp/testdir` contains three files sized 100, 50, and 10 bytes, running:
       /bin/bash solution.sh /tmp/testdir
     should print:
       100 /tmp/testdir/file1
